@@ -8,9 +8,8 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "bin": "script.js",
   "dependencies": {
-    "yt-dlp-exec": "^1.0.2",
     "yt-video-downloader": "file:"
-  },
-  "bin": "script.js"
+  }
 }
