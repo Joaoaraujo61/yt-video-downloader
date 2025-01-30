@@ -6,14 +6,16 @@ const readline = require('readline').createInterface({
     output: process.stdout,
 });
 const fs = require('fs')
+const path = require('path')
 
-const url = 'https://youtu.be/aoElXD4YAb4'; // URL com protocolo
+const url = 'https://youtu.be/wC1TTVjrMq8'; // URL com protocolo
 
 function setFileTimestamp(filePath){
     const currentDate = new Date()
 
     if(fs.existsSync(filePath)){
         fs.utimesSync(filePath, currentDate, currentDate)
+        console.log('Timestamp atualizado para o arquivo:', filePath)
     }else{
         console.log('Arquivo não encontrado', filePath)
     }
@@ -33,7 +35,7 @@ async function getVideoTitle() {
 }
 function askPath(){
     return new Promise((resolve, reject)=>{
-        readline.question('Onde será salvo?)', (path)=>{
+        readline.question('Onde será salvo?', (path)=>{
             if(path){
                 resolve(path)
             }else{
@@ -50,7 +52,7 @@ function chooseQuality() {
         })
             .then((output) => {
                 console.log(
-                    'Em qual formato você quer baixar o vídeo?\n' +
+                    'Em qual qualidade você quer baixar o vídeo?\n' +
                     '1- 144p\n' +
                     '2- 240p\n' +
                     '3- 360p\n' +
@@ -59,7 +61,7 @@ function chooseQuality() {
                     '6- 1080p\n'
                 );
 
-                readline.question('Escolha um formato (1-6): ', (res) => {
+                readline.question('Escolha uma qualidade (1-6): ', (res) => {
                     let format;
                     try {
                         switch (res) {
@@ -95,7 +97,7 @@ function chooseQuality() {
                 
             })
             .catch((error) => {
-                console.error('Erro ao listar formatos:', error);
+                console.error('Erro ao listar qualidades:', error);
                 reject(error);
             });
     });
@@ -106,8 +108,9 @@ async function downloadVideo() {
         const videoQuality = await chooseQuality();
         let savePath = await askPath()
         let videoTitle = await getVideoTitle()
-
-        savePath = savePath + '/' + videoTitle
+        
+        videoTitle = videoTitle.replace(/[<>:"/\\|?*\[\]]/g, '-');
+        savePath = path.join(savePath,'/', videoTitle)
 
         console.log('Iniciando download...');
         const output = await ytdlp(url, {
@@ -118,18 +121,15 @@ async function downloadVideo() {
         console.log('Download concluído com sucesso!');
         console.log(output); // Exibe o log do processo de download
 
-        let finalFilePath = savePath;
+        const videoData = await ytdlp(url, {
+            format: videoQuality,
+            print: 'ext', // Retorna apenas a extensão
+        });
 
-        
-        if (output.format_id === 'webm') {
-            finalFilePath += '.webm';
-        } else if (output.format_id === 'mkv') {
-            finalFilePath += '.mkv';
-        } else {
-            finalFilePath += '.mp4'; 
-        }
-        
-        setFileTimestamp(finalFilePath)
+        const ext = path.extname(savePath)
+        const downloadedFilePath = savePath + '.' + videoData.trim()
+
+        setFileTimestamp(downloadedFilePath)
     } catch (error) {
         console.error('Erro ao baixar o vídeo:', error);
     } finally {
