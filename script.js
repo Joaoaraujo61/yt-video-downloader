@@ -8,7 +8,21 @@ const readline = require('readline').createInterface({
 const fs = require('fs')
 const path = require('path')
 
-const url = 'https://youtu.be/wC1TTVjrMq8'; // URL com protocolo
+
+function askUrl() {  
+    return new Promise((resolve, reject)=>{
+        readline.question('Digite a URL do vídeo que será baixado: ', (res)=>{
+            if(res){
+                resolve(res)
+                readline.close
+            }else{
+                console.log('URL inválida!')
+                readline.close
+                reject('URL Inválida, rejected')
+            }
+        })
+    })
+}
 
 function setFileTimestamp(filePath){
     const currentDate = new Date()
@@ -21,7 +35,7 @@ function setFileTimestamp(filePath){
     }
 }
 
-async function getVideoTitle() {
+async function getVideoTitle(url) {
     try {
         const videoInfo = await ytdlp(url, {
             'dump-json': true, // Opção para obter as informações do vídeo em formato JSON
@@ -45,7 +59,8 @@ function askPath(){
     })
   }
 
-function chooseQuality() {
+async function chooseQuality(url) {
+
     return new Promise((resolve, reject) => {
         ytdlp(url, {
             'list-formats': true,
@@ -105,23 +120,24 @@ function chooseQuality() {
 
 async function downloadVideo() {
     try {
-        const videoQuality = await chooseQuality();
+        const newUrl = await askUrl()
+        const videoQuality = await chooseQuality(newUrl);
         let savePath = await askPath()
-        let videoTitle = await getVideoTitle()
+        let videoTitle = await getVideoTitle(newUrl)
+        
         
         videoTitle = videoTitle.replace(/[<>:"/\\|?*\[\]]/g, '-');
         savePath = path.join(savePath,'/', videoTitle)
 
         console.log('Iniciando download...');
-        const output = await ytdlp(url, {
+        const output = await ytdlp(newUrl, {
             output: savePath, // Define o nome do arquivo de saída
             format: videoQuality,
         });
 
         console.log('Download concluído com sucesso!');
-        console.log(output); // Exibe o log do processo de download
 
-        const videoData = await ytdlp(url, {
+        const videoData = await ytdlp(newUrl, {
             format: videoQuality,
             print: 'ext', // Retorna apenas a extensão
         });
